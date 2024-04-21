@@ -43,21 +43,21 @@ def main(args):
     fw_times = []
     bw_times = []
     for _ in range(args.benchmark_steps):
-        tic = time.perf_counter_ns()
+        tic = time.perf_counter()
 
         logit = net(x)
         loss = cross_entropy(logit, y)
 
         torch.cuda.synchronize()
-        toc = time.perf_counter_ns()
+        toc = time.perf_counter()
         fw_times.append(toc - tic)
 
-        tic = time.perf_counter_ns()
+        tic = time.perf_counter()
 
         loss.backward()
 
         torch.cuda.synchronize()
-        toc = time.perf_counter_ns()
+        toc = time.perf_counter()
         bw_times.append(toc - tic)
 
     fw_time = torch.tensor(fw_times)
@@ -65,18 +65,25 @@ def main(args):
 
     print(f"=== Forward ===")
     print(f"All:\t{fw_time}")
-    print(f"Mean:\t{fw_time.float().mean()}")
-    print(f"Std:\t{fw_time.float().std()}")
+    print(f"Mean:\t{fw_time.mean():.2e}")
+    print(f"Std:\t{fw_time.std():.2e}")
+
+    print(f"=== Backward ===")
+    print(f"All:\t{bw_time}")
+    print(f"Mean:\t{bw_time.mean():.2e}")
+    print(f"Std:\t{bw_time.std():.2e}")
+
+    return fw_time, bw_time
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--vocab_size", type=int, default=10_000)
     parser.add_argument("--context_length", type=int, default=128)
-    parser.add_argument("--d_model", type=int, default=768)
-    parser.add_argument("--num_layers", type=int, default=12)
-    parser.add_argument("--num_heads", type=int, default=12)
-    parser.add_argument("--d_ff", type=int, default=3072)
+    parser.add_argument("--d_model", type=int, default=2560)
+    parser.add_argument("--num_layers", type=int, default=32)
+    parser.add_argument("--num_heads", type=int, default=32)
+    parser.add_argument("--d_ff", type=int, default=10240)
     parser.add_argument("--attn_pdrop", type=float, default=0.0)
     parser.add_argument("--residual_pdrop", type=float, default=0.0)
     parser.add_argument("--batch_size", type=int, default=16)
