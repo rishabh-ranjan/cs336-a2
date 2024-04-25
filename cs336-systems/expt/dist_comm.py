@@ -37,7 +37,8 @@ def main(**kwargs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run_dir", type=str, default="runs/dev")
+    parser.add_argument("--run_dir", type=str, default="runs/2024-04-24")
+    parser.add_argument("--dev", type=int, default=1)
     parser.add_argument("--master_addr", type=str, default="localhost")
     parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--backend", type=str, default="gloo")
