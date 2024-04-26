@@ -53,7 +53,9 @@ if __name__ == "__main__":
     parser.add_argument("--backend", type=str, default="nccl")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--num_elements", type=int, default=4)
-    parser.add_argument("--world_size", type=int, default=2)
     parser.add_argument("--warmup_steps", type=int, default=5)
+    parser.add_argument("--local_world_size", type=int, default=2)
+    parser.add_argument("--node_rank", type=int, default=0)
+    parser.add_argument("--num_nodes", type=int, default=2)
     kwargs = parser.parse_args().__dict__
     main(**kwargs)

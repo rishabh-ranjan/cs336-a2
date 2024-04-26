@@ -38,27 +38,23 @@ class PathDict(dict):
         torch.save(val, path)
 
     def __getitem__(self, key):
-        if not super().__contains__(key):
-            path = f"{self.store_dir}/{key}.pt"
-            val = torch.load(path, map_location=self.device)
-            super().__setitem__(key, val)
-
-        return super().__getitem__(key)
-
-    def __contains__(self, key):
-        return Path(f"{self.store_dir}/{key}.pt").exists()
+        path = f"{self.store_dir}/{key}.pt"
+        val = torch.load(path, map_location=self.device)
+        return val
 
 
 def run(fn):
     @functools.wraps(fn)
     def wrap(**kwargs):
+        print(f"{kwargs=}")
+        frozen_kwargs = kwargs.copy()
+
         timestamp = str(time.time_ns())
         kwargs["timestamp"] = timestamp
-        print(f"{kwargs=}")
 
         store_dir = Path(kwargs["runs_dir"]) / timestamp
         store = PathDict(store_dir)
-        store["kwargs"] = kwargs
+        store["info"] = kwargs
 
         wandb_run = None
         wandb_project = kwargs.get("wandb_project", None)
@@ -75,26 +71,35 @@ def run(fn):
             kwargs["wandb_run"] = wandb_run
 
         kwargs["store"] = store
+
         fn(**kwargs)
-        store["done"] = True
+
+        store["info"] = {
+            **store["info"],
+            "done": True,
+        }
+        diff = {
+            k: v
+            for k, v in store["info"].items()
+            if k not in frozen_kwargs or v != frozen_kwargs[k]
+        }
+        print(f"info/kwargs={diff}")
 
     return wrap
 
 
-def scan(runs_dir, store_keys=["kwargs"]):
+def scan(runs_dir):
     runs_dir = Path(runs_dir)
-    raw = []
+    out = []
     for store_dir in tqdm(sorted(runs_dir.glob("*"))):
         store = PathDict(store_dir)
-        if "done" not in store:
+        info = store["info"]
+        if info.get("done", False):
             print(f"!rm -r {store_dir}  # not done")
             continue
-        if store["kwargs"]["dev"]:
+        if info.get("dev", True):
             print(f"!rm -r {store_dir}  # dev")
             continue
-        rec = {}
-        for store_key in store_keys:
-            for k, v in store[store_key].items():
-                rec[f"{store_key}/{k}"] = v
-        raw.append(rec)
-    return pd.DataFrame(raw).set_index("kwargs/timestamp")
+        out.append(info)
+    out = pd.DataFrame(out).set_index("timestamp")
+    return out
