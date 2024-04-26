@@ -40,7 +40,7 @@ if __name__ == "__main__":
                             f"-m",
                             f"dist_comm_multi_node",
                             f"--runs_dir=runs/2024-04-26",
-                            f"--dev=1",
+                            f"--dev=0",
                             f"--backend={backend}",
                             f"--device={device}",
                             f"--num_elements={num_elements}",
