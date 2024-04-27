@@ -39,7 +39,10 @@ class PathDict(dict):
 
     def __getitem__(self, key):
         path = f"{self.store_dir}/{key}.pt"
-        val = torch.load(path, map_location=self.device)
+        try:
+            val = torch.load(path, map_location=self.device)
+        except FileNotFoundError:
+            raise KeyError(key)
         return val
 
 
@@ -93,8 +96,12 @@ def scan(runs_dir):
     out = []
     for store_dir in tqdm(sorted(runs_dir.glob("*"))):
         store = PathDict(store_dir)
-        info = store["info"]
-        if info.get("done", False):
+        try:
+            info = store["info"]
+        except KeyError:
+            print(f"!rm -r {store_dir}  # no info")
+            continue
+        if not info.get("done", False):
             print(f"!rm -r {store_dir}  # not done")
             continue
         if info.get("dev", True):
