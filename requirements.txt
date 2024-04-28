@@ -1,0 +1,5 @@
+torch
+pytest
+ipykernel
+-e ./cs336-basics
+-e ./cs336-systems/[test]
