@@ -59,15 +59,97 @@ def _rms_norm_fwd(
     tl.store(out_ptrs, out, mask=mask)
 
 
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+
+@triton.jit
+def _rms_norm_bwd(
+    grad_x_ptr: tl.pointer_type,
+    part_grad_g_ptr: tl.pointer_type,
+    x_ptr: tl.pointer_type,
+    g_ptr: tl.pointer_type,
+    grad_out_ptr: tl.pointer_type,
+    h: tl.uint32,
+    BLOCK_SIZE: tl.constexpr,
+):
+    eps = 1e-5
+
+    row_idx = tl.program_id(0)
+    offsets = tl.arange(0, BLOCK_SIZE)
+    mask = offsets < h
+
+    x_ptrs = x_ptr + row_idx * h + offsets
+    x = tl.load(x_ptrs, mask=mask, other=0.0)
+
+    g_ptrs = g_ptr + offsets
+    g = tl.load(g_ptrs, mask=mask, other=0.0)
+
+    grad_out_ptrs = grad_out_ptr + row_idx * h + offsets
+    grad_out = tl.load(grad_out_ptrs, mask=mask, other=0.0)
+
+    rsq = tl.sum(x * x) / h + eps
+    r = tl.sqrt(rsq)
+    rcu = r * rsq
+
+    part_grad_g = grad_out * x / r
+    part_grad_g_ptrs = part_grad_g_ptr + row_idx * h + offsets
+    tl.store(part_grad_g_ptrs, part_grad_g, mask=mask)
+
+    s = tl.sum(grad_out * x * g)
+    grad_x = -(x * s) / (h * rcu)
+    grad_x += grad_out * g / r
+    grad_x_ptrs = grad_x_ptr + row_idx * h + offsets
+    tl.store(grad_x_ptrs, grad_x, mask=mask)
+
+
 class RMSNormTriton(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x, w):
-        ctx.save_for_backward(x, w)
+    def forward(ctx, x, g):
+        ctx.save_for_backward(x, g)
 
-        h = x.shape[-1]
+        h = x.size(-1)
 
-        assert w.dim() == 1 and w.size(0) == h, "dimension mismatch"
-        assert x.is_cuda and w.is_cuda, "expected CUDA tensors"
+        assert g.dim() == 1 and g.size(0) == h, "dimension mismatch"
+        assert x.is_cuda and g.is_cuda, "expected CUDA tensors"
         assert (
             x.is_contiguous()
         ), "our pointer arithmetic will assume contiguous tensors"
@@ -76,6 +158,27 @@ class RMSNormTriton(torch.autograd.Function):
         out = torch.empty_like(x)
 
         grid = (x.view(-1, h).size(0),)
-        _rms_norm_fwd[grid](out, x, w, h, ctx.BLOCK_SIZE)
+        _rms_norm_fwd[grid](out, x, g, h, ctx.BLOCK_SIZE)
 
         return out
+
+    @staticmethod
+    def backward(ctx, grad_out):
+        x, g = ctx.saved_tensors
+
+        h = x.size(-1)
+
+        assert grad_out.is_cuda, "expected CUDA tensors"
+        assert (
+            grad_out.is_contiguous()
+        ), "our pointer arithmetic will assume contiguous tensors"
+
+        grad_x = torch.empty_like(x)
+        part_grad_g = torch.empty_like(x)
+
+        grid = (x.view(-1, h).size(0),)
+        _rms_norm_bwd[grid](grad_x, part_grad_g, x, g, grad_out, h, ctx.BLOCK_SIZE)
+
+        grad_g = part_grad_g.view(-1, h).sum(0)
+
+        return grad_x, grad_g
