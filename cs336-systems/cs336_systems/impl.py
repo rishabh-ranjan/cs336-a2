@@ -3,6 +3,25 @@ import triton
 import triton.language as tl
 
 
+def bw_g(grad_out, x, g):
+    eps = 1e-5
+    rms = torch.sqrt((x**2).mean(-1, keepdim=True) + eps)
+    return (grad_out * x / rms).view(-1, x.size(-1)).sum(0)
+
+
+def bw_x(grad_out, x, g):
+    eps = 1e-5
+    h = x.size(-1)
+    rsq = (x**2).mean(-1) + eps
+    r = rsq.sqrt()
+    neq = -(x[..., :, None] @ x[..., None, :]) / h
+    diag = torch.zeros(h, h).fill_diagonal_(1)
+    nr = neq + rsq[..., None, None] * diag
+    rcu = r * rsq
+    m = nr * g[..., :, None] / rcu[..., None, None]
+    return (grad_out[..., None, :] @ m)[..., 0, :]
+
+
 class RMSNormPyTorch(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x, w):
@@ -10,6 +29,11 @@ class RMSNormPyTorch(torch.autograd.Function):
         eps = 1e-5
         rms = ((x**2).mean(-1, keepdim=True) + eps).sqrt()
         return x / rms * w
+
+    @staticmethod
+    def backward(ctx, grad_out):
+        x, w = ctx.saved_tensors
+        return bw_x(grad_out, x, w), bw_g(grad_out, x, w)
 
 
 @triton.jit

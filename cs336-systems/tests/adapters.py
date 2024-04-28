@@ -12,7 +12,7 @@ def get_rmsnorm_autograd_function_pytorch() -> Type:
     """
     Returns a torch.autograd.Function subclass that implements RMSNorm.
     The expectation is that this class will implement RMSNorm
-    using standard PyTorch operations.
+    using standard PyTorch operati:ons.
 
     Returns:
         A class object (not an instance of the class)
@@ -55,7 +55,7 @@ def rmsnorm_backward_g_pytorch(
     Returns:
         Gradient of the loss with respect to g. Shape: (H,)
     """
-    raise NotImplementedError
+    return impl.bw_g(grad_output, x, g)
 
 
 def rmsnorm_backward_x_pytorch(
@@ -76,7 +76,7 @@ def rmsnorm_backward_x_pytorch(
     Returns:
         Gradient of the loss with respect to x. Shape: (*, H)
     """
-    raise NotImplementedError
+    return impl.bw_x(grad_output, x, g)
 
 
 def get_ddp_individual_parameters(module: torch.nn.Module) -> torch.nn.Module:
