@@ -18,7 +18,7 @@ def get_rmsnorm_autograd_function_pytorch() -> Type:
         A class object (not an instance of the class)
     """
     # For example: return MyRMSNormAutogradFunctionClass
-    return impl.RMSNorm
+    return impl.RMSNormPyTorch
 
 
 def get_rmsnorm_autograd_function_triton() -> Type:
@@ -34,7 +34,7 @@ def get_rmsnorm_autograd_function_triton() -> Type:
         A class object (not an instance of the class)
     """
     # For example: return MyTritonRMSNormAutogradFunctionClass
-    raise NotImplementedError
+    return impl.RMSNormTriton
 
 
 def rmsnorm_backward_g_pytorch(
