@@ -1,0 +1,60 @@
+STAGE:2024-04-28 16:12:01 2177080:2177080 ActivityProfilerController.cpp:314] Completed Stage: Warm Up
+STAGE:2024-04-28 16:12:04 2177080:2177080 ActivityProfilerController.cpp:320] Completed Stage: Collection
+STAGE:2024-04-28 16:12:04 2177080:2177080 ActivityProfilerController.cpp:324] Completed Stage: Post Processing
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                       cudaLaunchKernel        80.25%        2.557s        80.25%        2.557s     258.269us     240.786ms         7.56%     240.786ms      24.322us          9900  
+                                  cudaDeviceSynchronize        10.29%     327.963ms        10.29%     327.963ms     327.963ms       0.000us         0.00%       0.000us       0.000us             1  
+                                           forward_pass         2.47%      78.844ms        89.71%        2.858s     571.594ms       0.000us         0.00%        3.466s     693.248ms             5  
+                                               aten::mm         0.84%      26.775ms        21.16%     673.993ms     466.431us        2.423s        76.09%        2.475s       1.713ms          1445  
+                                           aten::linear         0.52%      16.726ms        21.90%     697.576ms     482.752us       0.000us         0.00%        2.425s       1.678ms          1445  
+                                              aten::mul         0.48%      15.303ms         2.25%      71.617ms      49.391us     185.337ms         5.82%     226.539ms     156.234us          1450  
+                                           aten::matmul         0.44%      14.164ms        34.90%        1.112s     577.607us       0.000us         0.00%        2.614s       1.358ms          1925  
+                                              aten::add         0.43%      13.843ms         3.35%     106.766ms      88.236us      95.763ms         3.01%     125.503ms     103.721us          1210  
+                                            aten::copy_         0.38%      12.240ms        13.62%     433.903ms     300.279us      88.368ms         2.77%     123.133ms      85.213us          1445  
+                                            aten::empty         0.33%      10.451ms         0.33%      10.451ms       7.158us       0.000us         0.00%       0.000us       0.000us          1460  
+                                        cudaMemcpyAsync         0.29%       9.384ms         0.29%       9.384ms      39.100us       7.756ms         0.24%       7.756ms      32.317us           240  
+                                              aten::bmm         0.27%       8.456ms         0.69%      22.089ms      46.019us      69.302ms         2.18%      79.317ms     165.244us           480  
+                                              aten::div         0.26%       8.227ms        13.93%     443.836ms     616.439us     108.542ms         3.41%     124.864ms     173.422us           720  
+                                             aten::mean         0.23%       7.342ms         1.02%      32.482ms      66.973us      17.014ms         0.53%      41.695ms      85.969us           485  
+                                              aten::pow         0.22%       6.949ms        12.74%     405.746ms     836.590us      27.649ms         0.87%      39.438ms      81.315us           485  
+                                        aten::transpose         0.20%       6.448ms         0.23%       7.357ms       2.781us       0.000us         0.00%       0.000us       0.000us          2645  
+                                             aten::ones         0.18%       5.726ms         3.11%      99.066ms     412.775us       0.000us         0.00%      10.259ms      42.746us           240  
+                                          aten::reshape         0.16%       5.144ms        12.52%     398.805ms     165.137us       0.000us         0.00%      60.303ms      24.970us          2415  
+                                            aten::clone         0.16%       4.985ms        12.91%     411.389ms     341.402us       0.000us         0.00%     110.654ms      91.829us          1205  
+                                            aten::rsqrt         0.14%       4.590ms         0.66%      21.176ms      43.662us     485.000us         0.02%      14.985ms      30.897us           485  
+                                              aten::max         0.14%       4.575ms         0.42%      13.290ms      55.375us      18.439ms         0.58%      19.739ms      82.246us           240  
+                                           aten::expand         0.12%       3.695ms         0.13%       4.019ms       2.392us       0.000us         0.00%       0.000us       0.000us          1680  
+                                              aten::sum         0.11%       3.466ms         3.36%     107.133ms     446.387us      14.795ms         0.46%      22.713ms      94.638us           240  
+                                                aten::t         0.11%       3.351ms         0.22%       6.865ms       4.751us       0.000us         0.00%       0.000us       0.000us          1445  
+                                              aten::sub         0.09%       2.790ms         0.40%      12.851ms      53.546us      25.919ms         0.81%      29.065ms     121.104us           240  
+                                            aten::fill_         0.09%       2.772ms         3.02%      96.307ms     401.279us     240.000us         0.01%      10.270ms      42.792us           240  
+                                             aten::triu         0.08%       2.586ms         3.29%     104.863ms     436.929us     480.000us         0.02%       2.632ms      10.967us           240  
+                                     aten::masked_fill_         0.08%       2.437ms         0.41%      13.105ms      54.604us      27.146ms         0.85%      28.456ms     118.567us           240  
+                                             aten::view         0.08%       2.391ms         0.08%       2.391ms       0.899us       0.000us         0.00%       0.000us       0.000us          2660  
+                                              aten::exp         0.07%       2.364ms         3.37%     107.501ms     447.921us      27.190ms         0.85%      38.972ms     162.383us           240  
+                                              aten::erf         0.07%       2.326ms         0.87%      27.672ms     115.300us      54.507ms         1.71%      63.717ms     265.488us           240  
+                                               aten::to         0.06%       1.828ms         1.25%      39.685ms      54.738us       0.000us         0.00%       8.754ms      12.074us           725  
+                                     aten::_unsafe_view         0.06%       1.768ms         0.06%       1.768ms       0.667us       0.000us         0.00%       0.000us       0.000us          2650  
+                                       aten::empty_like         0.05%       1.687ms         0.32%      10.330ms       8.573us       0.000us         0.00%       0.000us       0.000us          1205  
+                                         aten::_to_copy         0.05%       1.673ms         1.23%      39.335ms     163.896us       0.000us         0.00%       8.786ms      36.608us           240  
+                                    aten::empty_strided         0.05%       1.478ms         0.05%       1.478ms       6.158us       0.000us         0.00%       0.000us       0.000us           240  
+                                      aten::masked_fill         0.04%       1.358ms         0.91%      28.881ms     120.338us       0.000us         0.00%      62.810ms     261.708us           240  
+                                       aten::as_strided         0.04%       1.308ms         0.04%       1.308ms       0.302us       0.000us         0.00%       0.000us       0.000us          4330  
+          cudaOccupancyMaxActiveBlocksPerMultiprocessor         0.03%     845.000us         0.03%     845.000us       0.585us      33.219ms         1.04%      33.219ms      22.989us          1445  
+                                       aten::contiguous         0.01%     316.000us         0.24%       7.707ms      32.112us       0.000us         0.00%      19.563ms      81.513us           240  
+                                     aten::index_select         0.01%     180.000us         0.01%     361.000us      36.100us     356.000us         0.01%     407.000us      40.700us            10  
+                                        aten::embedding         0.00%     102.000us         0.06%       1.813ms     181.300us       0.000us         0.00%     475.000us      47.500us            10  
+                                           aten::arange         0.00%      97.000us         0.01%     307.000us      30.700us       5.000us         0.00%      10.000us       1.000us            10  
+                                          aten::resize_         0.00%      86.000us         0.00%      86.000us       5.733us       0.000us         0.00%       0.000us       0.000us            15  
+                                        aten::unsqueeze         0.00%      32.000us         0.00%      36.000us       7.200us       0.000us         0.00%       0.000us       0.000us             5  
+                                      aten::result_type         0.00%       2.000us         0.00%       2.000us       0.004us       0.000us         0.00%       0.000us       0.000us           485  
+                                          aten::dropout         0.00%       1.000us         0.00%       1.000us       0.001us       0.000us         0.00%       0.000us       0.000us           720  
+void at::native::elementwise_kernel<128, 2, at::nati...         0.00%       0.000us         0.00%       0.000us       0.000us      10.000us         0.00%      10.000us       2.000us             5  
+void at::native::(anonymous namespace)::indexSelectL...         0.00%       0.000us         0.00%       0.000us       0.000us     356.000us         0.01%     356.000us      35.600us            10  
+void (anonymous namespace)::elementwise_kernel_with_...         0.00%       0.000us         0.00%       0.000us       0.000us       5.000us         0.00%       5.000us       1.000us             5  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 3.186s
+Self CUDA time total: 3.184s
+

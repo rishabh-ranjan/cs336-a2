@@ -44,21 +44,21 @@ def main(args):
 
         else:
             net.train()
-            torch.cuda.synchronize()
+            # torch.cuda.synchronize()
 
             with record_function("forward_pass"):
                 logit = net(x)
-                torch.cuda.synchronize()
+                # torch.cuda.synchronize()
 
             with record_function("backward_pass"):
                 loss = cross_entropy(logit, y)
                 loss.backward()
-                torch.cuda.synchronize()
+                # torch.cuda.synchronize()
 
             with record_function("optimizer"):
                 opt.step()
                 opt.zero_grad(set_to_none=True)
-                torch.cuda.synchronize()
+                # torch.cuda.synchronize()
 
     # warmup
     for _ in range(args.warmup_steps):
@@ -80,11 +80,11 @@ def main(args):
             prof.step()
 
     if args.with_stack:
-        prof.export_stacks("out/lm_profiler_stacks.txt", "self_cuda_time_total")
+        prof.export_stacks("out/lm_profiler_stacks.txt", "self_cpu_time_total")
 
     print(
         prof.key_averages(group_by_input_shape=args.record_shapes).table(
-            sort_by="cpu_time_total", row_limit=50
+            sort_by=args.sort_by, row_limit=50
         )
     )
 
@@ -102,18 +102,11 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--warmup_steps", type=int, default=1)
     parser.add_argument("--benchmark_steps", type=int, default=5)
-    parser.add_argument(
-        "--inference_only", action=argparse.BooleanOptionalAction, default=False
-    )
-    parser.add_argument(
-        "--record_shapes", action=argparse.BooleanOptionalAction, default=True
-    )
-    parser.add_argument(
-        "--profile_memory", action=argparse.BooleanOptionalAction, default=False
-    )
-    parser.add_argument(
-        "--with_stack", action=argparse.BooleanOptionalAction, default=True
-    )
+    parser.add_argument("--inference_only", type=int, default=0)
+    parser.add_argument("--record_shapes", type=int, default=0)
+    parser.add_argument("--profile_memory", type=int, default=0)
+    parser.add_argument("--with_stack", type=int, default=1)
+    parser.add_argument("--sort_by", type=str, default="self_cpu_time_total")
 
     args = parser.parse_args()
     main(args)
