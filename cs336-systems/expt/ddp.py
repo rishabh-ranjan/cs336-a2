@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import time
 
 import torch
 import torch.distributed as dist
@@ -95,9 +96,10 @@ def main(store, **kwargs):
     # broadcast init params
     if kwargs["ddp"]:
         handles = []
-        for param in net.parameters():
-            handle = dist.broadcast(param.data, 0, async_op=True)
-            handles.append(handle)
+        with torch.no_grad():
+            for param in net.parameters():
+                handle = dist.broadcast(param, 0, async_op=True)
+                handles.append(handle)
 
         for handle in handles:
             handle.wait()
@@ -107,7 +109,12 @@ def main(store, **kwargs):
     assert kwargs["batch_size"] % world_size == 0
     local_batch_size = kwargs["batch_size"] // world_size
 
+    step_times = []
+    comm_times = []
     for _ in range(kwargs["num_train_steps"]):
+        torch.cuda.synchronize()
+        step_tic = time.perf_counter()
+
         net.train()
         batch = torch.randint(
             kwargs["vocab_size"], (local_batch_size, kwargs["context_length"] + 1)
@@ -123,19 +130,34 @@ def main(store, **kwargs):
 
         # all reduce grads
         if kwargs["ddp"]:
+            torch.cuda.synchronize()
+            comm_tic = time.perf_counter()
+
             handles = []
             for param in net.parameters():
                 handle = dist.all_reduce(
-                    param.grad.data, op=dist.ReduceOp.AVG, async_op=True
+                    param.grad, op=dist.ReduceOp.AVG, async_op=True
                 )
                 handles.append(handle)
 
             for handle in handles:
                 handle.wait()
 
+            torch.cuda.synchronize()
+            comm_toc = time.perf_counter()
+            comm_times.append(comm_toc - comm_tic)
+
         opt.step()
 
-    store["net"] = net.state_dict()
+        torch.cuda.synchronize()
+        step_toc = time.perf_counter()
+        step_times.append(step_toc - step_tic)
+
+    store["step_times"] = step_times
+    store["comm_times"] = comm_times
+
+    if kwargs["store_net"]:
+        store["net"] = net.state_dict()
 
 
 if __name__ == "__main__":
@@ -159,6 +181,7 @@ if __name__ == "__main__":
     parser.add_argument("--backend", type=str, default="nccl")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--ddp", type=int, default=1)
+    parser.add_argument("--store_net", type=int, default=0)
 
     kwargs = parser.parse_args().__dict__
     main(**kwargs)
