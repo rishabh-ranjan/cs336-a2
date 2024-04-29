@@ -53,7 +53,6 @@ def run(fn):
         frozen_kwargs = kwargs.copy()
 
         timestamp = str(time.time_ns())
-        kwargs["timestamp"] = timestamp
 
         store_dir = Path(kwargs["runs_dir"]) / timestamp
         store = PathDict(store_dir)
@@ -93,7 +92,7 @@ def run(fn):
 
 def scan(runs_dir):
     runs_dir = Path(runs_dir)
-    out = []
+    out = {}
     for store_dir in tqdm(sorted(runs_dir.glob("*"))):
         store = PathDict(store_dir)
         try:
@@ -107,6 +106,6 @@ def scan(runs_dir):
         if info.get("dev", True):
             print(f"!rm -r {store_dir}  # dev")
             continue
-        out.append(info)
-    out = pd.DataFrame(out).set_index("timestamp")
+        out[store_dir.name] = info
+    out = pd.DataFrame(out).T
     return out
