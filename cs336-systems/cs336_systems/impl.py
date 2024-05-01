@@ -59,48 +59,6 @@ def _rms_norm_fwd(
     tl.store(out_ptrs, out, mask=mask)
 
 
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-
-
 @triton.jit
 def _rms_norm_bwd(
     grad_x_ptr: tl.pointer_type,

@@ -59,6 +59,7 @@ def _test_DistributedDataParallelIndividualParameters(
         # match the non-parallel baseline above.
         ddp_base = deepcopy(non_parallel_model)
         ddp_model = get_ddp_individual_parameters(ddp_base)
+        print("1")
 
         # If we're on rank 0, the DDP model should still exactly match the parameters of the
         # non-parallel baseline (since the parameters on rank 0 weren't changed).
@@ -77,12 +78,15 @@ def _test_DistributedDataParallelIndividualParameters(
             if rank == 0 or is_no_grad_fixed_param:
                 assert torch.allclose(non_parallel_model_parameter, ddp_model_parameter)
             else:
+                print("hello", rank)
                 assert not torch.allclose(
                     non_parallel_model_parameter, ddp_model_parameter
                 )
+        print("2", rank)
 
         # Make sure all the ranks have the same model state
         validate_ddp_net_equivalence(ddp_model)
+        print("3")
 
         # Load the dataset from disk, so we can ensure that every rank has the same
         # overall pool of data.
@@ -101,6 +105,8 @@ def _test_DistributedDataParallelIndividualParameters(
         ddp_optimizer = optim.SGD(ddp_model.parameters(), lr=0.1)
         # Optimizer for the non-parallel model
         non_parallel_optimizer = optim.SGD(non_parallel_model.parameters(), lr=0.1)
+
+        print("4")
 
         for i in range(5):
             ddp_optimizer.zero_grad()
