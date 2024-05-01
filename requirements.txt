@@ -3,6 +3,7 @@ ipywidgets
 torch
 pandas
 pytest
+pytest-xdist
 seaborn
 tqdm
 wandb
