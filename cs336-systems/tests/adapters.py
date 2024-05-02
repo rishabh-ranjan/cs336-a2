@@ -5,7 +5,7 @@ from typing import Type
 
 import torch
 
-from cs336_systems import impl, ddp
+from cs336_systems import impl, ddp, optim
 
 
 def get_rmsnorm_autograd_function_pytorch() -> Type:
@@ -188,4 +188,4 @@ def get_sharded_optimizer(
     Returns:
         Instance of sharded optimizer.
     """
-    raise NotImplementedError
+    return optim.ShardedOptimizer(params, optimizer_cls, **kwargs)
