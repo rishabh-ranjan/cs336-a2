@@ -21,6 +21,7 @@ def test_sharded_optimizer(model_class):
     # world_size = 2
     # TODO: revert
     world_size = 1
+    print(f"{world_size=}")
     mp.spawn(
         _test_sharded_optimizer,
         args=(world_size, model_class),
@@ -33,11 +34,14 @@ def _test_sharded_optimizer(
     rank: int, world_size: int, model_class: Type[torch.nn.Module]
 ):
     # Use gloo backend for CPU
+    print(f"{rank=}, {world_size=}")
     device = _setup_process_group(rank=rank, world_size=world_size, backend="gloo")
+    print(f"{device=}")
     torch.manual_seed(42)
     optimizer_cls = torch.optim.AdamW
     # Since we've seeded, model states should be the same across ranks without having to broadcast.
     non_sharded_model = model_class().to(device)
+    print(f"{non_sharded_model=}")
 
     non_sharded_optimizer = optimizer_cls(
         non_sharded_model.parameters(),
@@ -46,7 +50,9 @@ def _test_sharded_optimizer(
         betas=(0.9, 0.999),
         eps=1e-8,
     )
+    print(f"{non_sharded_optimizer=}")
     sharded_model = deepcopy(non_sharded_model)
+    print(f"{sharded_model=}")
     sharded_optimizer = get_sharded_optimizer(
         sharded_model.parameters(),
         optimizer_cls,
@@ -55,8 +61,20 @@ def _test_sharded_optimizer(
         betas=(0.9, 0.999),
         eps=1e-8,
     )
+    print(f"{sharded_optimizer=}")
 
-    for _ in range(10):
+    for step in range(10):
+        print(f"Rank {rank}, Step {step}")
+
+        # Check that the final model weights are the same regardless of if we're using
+        # the sharded or non-sharded optimizer.
+        for non_sharded_parameters, sharded_parameters in zip(
+            non_sharded_model.parameters(), sharded_model.parameters()
+        ):
+            numpy.testing.assert_allclose(
+                non_sharded_parameters.detach().cpu().numpy(),
+                sharded_parameters.detach().cpu().numpy(),
+            )
         non_sharded_optimizer.zero_grad()
         sharded_optimizer.zero_grad()
 
@@ -82,13 +100,17 @@ def _test_sharded_optimizer(
         non_sharded_optimizer.step()
         sharded_optimizer.step()
 
-    # Check that the final model weights are the same regardless of if we're using
-    # the sharded or non-sharded optimizer.
-    for non_sharded_parameters, sharded_parameters in zip(
-        non_sharded_model.parameters(), sharded_model.parameters()
-    ):
-        numpy.testing.assert_allclose(
-            non_sharded_parameters.detach().cpu().numpy(),
-            sharded_parameters.detach().cpu().numpy(),
-        )
+        # Check that the final model weights are the same regardless of if we're using
+        # the sharded or non-sharded optimizer.
+        for non_sharded_parameters, sharded_parameters in zip(
+            non_sharded_model.parameters(), sharded_model.parameters()
+        ):
+            numpy.testing.assert_allclose(
+                non_sharded_parameters.detach().cpu().numpy(),
+                sharded_parameters.detach().cpu().numpy(),
+            )
     _cleanup_process_group()
+
+
+if __name__ == "__main__":
+    test_sharded_optimizer(ToyModel)
