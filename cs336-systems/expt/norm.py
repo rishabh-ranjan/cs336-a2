@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 from cs336_basics.model import RMSNorm
-from cs336_systems.impl import TritonRMSNorm
+from cs336_systems.impl import PyTorchRMSNorm, TritonRMSNorm
 
 
 @expt.run
@@ -20,9 +20,13 @@ def main(store, args):
         norm = nn.LayerNorm(args.d_model)
     elif args.norm == "triton_rms":
         norm = TritonRMSNorm(args.d_model)
+    elif args.norm == "pytorch_rms":
+        norm = PyTorchRMSNorm(args.d_model)
+    elif args.norm == "compiled_rms":
+        norm = torch.compile(RMSNorm(args.d_model))
     norm = norm.to(device)
 
-    with torch.no_grad():
+    with torch.enable_grad() if args.backward else torch.no_grad():
         for _ in range(args.warmup_steps):
             y = norm(x)
         torch.cuda.synchronize()
@@ -32,6 +36,9 @@ def main(store, args):
             torch.cuda.synchronize()
             tic = time.perf_counter()
             y = norm(x)
+            if args.backward:
+                x.grad = None
+                y.backward(torch.randn_like(y))
             torch.cuda.synchronize()
             toc = time.perf_counter()
             times.append(toc - tic)
@@ -51,6 +58,7 @@ if __name__ == "__main__":
     parser.add_argument("--warmup_steps", type=int, default=10)
     parser.add_argument("--benchmark_steps", type=int, default=1000)
     parser.add_argument("--norm", type=str, default="rms")
+    parser.add_argument("--backward", type=int, default=0)
 
     args = parser.parse_args()
     main(args)

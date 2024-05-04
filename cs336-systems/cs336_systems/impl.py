@@ -149,3 +149,11 @@ class TritonRMSNorm(torch.nn.Module):
 
     def forward(self, x):
         return RMSNormTriton.apply(x, self.g)
+
+class PyTorchRMSNorm(torch.nn.Module):
+    def __init__(self, d_model):
+        super().__init__()
+        self.g = torch.nn.Parameter(torch.ones(d_model))
+
+    def forward(self, x):
+        return RMSNormPyTorch.apply(x, self.g)
