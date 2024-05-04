@@ -6,16 +6,21 @@ import torch
 from torch import nn
 
 from cs336_basics.model import RMSNorm
+from cs336_systems.impl import TritonRMSNorm
 
 
 @expt.run
 def main(store, args):
-    x = torch.randn(args.batch_size, args.d_model)
+    device = "cuda"
+    x = torch.randn(args.batch_size, args.d_model).to(device)
 
     if args.norm == "rms":
         norm = RMSNorm(args.d_model)
     elif args.norm == "layer":
         norm = nn.LayerNorm(args.d_model)
+    elif args.norm == "triton_rms":
+        norm = TritonRMSNorm(args.d_model)
+    norm = norm.to(device)
 
     with torch.no_grad():
         for _ in range(args.warmup_steps):
