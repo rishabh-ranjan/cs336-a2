@@ -3,6 +3,7 @@
 import argparse
 import time
 
+import expt
 import torch
 
 torch.manual_seed(0)
@@ -44,9 +45,13 @@ CONFIG = {
 }
 
 
-def main(args):
+@expt.run
+def main(store, args):
     if args.lm_size:
         args.__dict__.update(CONFIG[args.lm_size])
+        info = store["info"]
+        info.update(CONFIG[args.lm_size])
+        store["info"] = info
 
     # setup
     device = torch.device("cuda")
@@ -99,24 +104,17 @@ def main(args):
         toc = time.perf_counter()
         bw_times.append(toc - tic)
 
-    fw_time = torch.tensor(fw_times)
-    bw_time = torch.tensor(bw_times)
-
-    print(f"=== Forward ===")
-    print(f"All:\t{fw_time}")
-    print(f"Mean:\t{fw_time.mean():.2e}")
-    print(f"Std:\t{fw_time.std():.2e}")
-
-    print(f"=== Backward ===")
-    print(f"All:\t{bw_time}")
-    print(f"Mean:\t{bw_time.mean():.2e}")
-    print(f"Std:\t{bw_time.std():.2e}")
-
-    return fw_time, bw_time
+    store["fw_time"] = torch.tensor(fw_times)
+    store["bw_time"] = torch.tensor(bw_times)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--runs_dir", type=str, default="/dfs/scratch1/ranjanr/runs/cs336/2024-05-03"
+    )
+    parser.add_argument("--dev", type=int, default=1)
+
     parser.add_argument("--lm_size", type=str, default="small")
     parser.add_argument("--vocab_size", type=int, default=10_000)
     parser.add_argument("--context_length", type=int, default=128)
@@ -130,6 +128,5 @@ if __name__ == "__main__":
     parser.add_argument("--warmup_steps", type=int, default=1)
     parser.add_argument("--benchmark_steps", type=int, default=5)
     parser.add_argument("--amp", type=int, default=0)
-
     args = parser.parse_args()
     main(args)

@@ -9,3 +9,4 @@ tqdm
 wandb
 -e ./cs336-basics
 -e ./cs336-systems/[test]
+expt @ git+https://github.com/rishabh-ranjan/expt
