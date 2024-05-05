@@ -4,10 +4,10 @@ import torch.distributed as dist
 
 
 class DDP(nn.Module):
-    def __init__(self, module: nn.Module, bucket_size_mb: float = 0):
+    def __init__(self, module: nn.Module, bucket_size_mb: float = 0, naive=False):
         super().__init__()
         self.module = module
-        self.max_bucket_size = int(bucket_size_mb * 1e6)
+        self.max_bucket_size = bucket_size_mb * 1e6
 
         requires_grad: dict[str, bool] = {}
         for param_name, param in self.module.named_parameters():
@@ -34,6 +34,18 @@ class DDP(nn.Module):
         self.flats: list[torch.Tensor] = []
         self.buckets: list[list[torch.Tensor]] = []
 
+        def naive_hook(param):
+            handles = []
+            for param in self.module.parameters():
+                param.grad /= dist.get_world_size()
+                handle = dist.all_reduce(
+                    param.grad, op=dist.ReduceOp.SUM, async_op=True
+                )
+                handles.append(handle)
+
+            for handle in handles:
+                handle.wait()
+
         def hook(param):
             t = param.grad
             t_size = t.numel() * t.element_size()
@@ -43,9 +55,15 @@ class DDP(nn.Module):
             self.bucket.append(t)
             self.bucket_size += t_size
 
-        for param in self.parameters():
-            if param.requires_grad:
-                param.register_post_accumulate_grad_hook(hook)
+        if naive:
+            for param in self.parameters():
+                if param.requires_grad:
+                    param.register_post_accumulate_grad_hook(naive_hook)
+                    break
+        else:
+            for param in self.parameters():
+                if param.requires_grad:
+                    param.register_post_accumulate_grad_hook(hook)
 
     def flush(self):
         # for t in self.bucket:
