@@ -5,6 +5,7 @@ import time
 import expt
 import torch
 import torch.distributed as dist
+from torch.profiler import profile, record_function, ProfilerActivity
 
 torch.manual_seed(42)
 
@@ -128,10 +129,32 @@ def main(store, args):
         logit = net(x)
         loss = cross_entropy(logit, y)
         opt.zero_grad(set_to_none=True)
-        loss.backward()
 
-        if args.ddp:
-            net.finish_gradient_synchronization()
+        with profile(
+            activities=[
+                ProfilerActivity.CPU,
+                ProfilerActivity.CUDA,
+            ],
+            schedule=torch.profiler.schedule(
+                wait=0,
+                warmup=1,
+                active=1,
+                repeat=1,
+            ),
+            experimental_config=torch._C._profiler._ExperimentalConfig(verbose=True),
+            record_shapes=False,
+            profile_memory=False,
+            with_stack=False,
+        ) as prof:
+            loss.backward()
+
+            if args.ddp:
+                net.finish_gradient_synchronization()
+
+            prof.step()
+
+        if rank == 0:
+            prof.export_chrome_trace(f"out/trace_{args.naive=}.json")
 
         opt.step()
 
@@ -154,14 +177,14 @@ if __name__ == "__main__":
         default="/dfs/scratch1/ranjanr/runs/cs336/2024-05-04_ddp",
     )
 
-    parser.add_argument("--lm_size", type=str, default="2.7b")
+    parser.add_argument("--lm_size", type=str, default="xl")
     parser.add_argument("--vocab_size", type=int, default=10_000)
     parser.add_argument("--context_length", type=int, default=128)
     parser.add_argument("--attn_pdrop", type=float, default=0.1)
     parser.add_argument("--residual_pdrop", type=float, default=0.1)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--warmup_steps", type=int, default=1)
-    parser.add_argument("--benchmark_steps", type=int, default=5)
+    parser.add_argument("--benchmark_steps", type=int, default=1)
     parser.add_argument("--backend", type=str, default="nccl")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--ddp", type=int, default=1)
